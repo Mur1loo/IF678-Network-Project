@@ -3,7 +3,7 @@ from threading import Thread
 
 
 class Pc:
-    def __init__(self, pcnumber):
+    def __init__(self, pcnumber, uc):
         self.pcnumber = pcnumber
         self.client = socket(AF_INET, SOCK_DGRAM)
         self.servername = 'localhost'
@@ -11,6 +11,17 @@ class Pc:
         self.serverAddress = (self.servername, self.serverport)
         self.nex = None
         self.prev = None
+        self.uc = uc
+        self.key = None
+
+        if not uc:
+            self.serverport = 5000
+            self.serverAddress = (self.servername, self.serverport)
+            message = '.'
+            self.client.sendto(message.encode(), self.serverAddress)
+            data, saddress = self.client.recvfrom(2048)
+            self.key = data.decode()
+            self.client.close()
 
     def portchange(self, numberport):
         self.serverport = int(numberport)
@@ -19,10 +30,14 @@ class Pc:
     def handlerequest(self, mserversocket):
         message, clientaddress = self.client.recvfrom(2048)
         req = message.decode()
-        print(f'Requisicao recebida de {clientaddress}')
-        print(f'A requisicao foi:{req}')
-        rep = f'Oi, aqui quem fala é {self.pcnumber}!'
-        mserversocket.sendto(rep.encode(), clientaddress)
+        if req == '.':
+            rep = 'chave'
+            mserversocket.sendto(rep.encode(), clientaddress)
+        else:
+            print(f'Requisicao recebida de {clientaddress}')
+            print(f'A requisicao foi:{req}')
+            rep = f'Oi, aqui quem fala é {self.pcnumber}!'
+            mserversocket.sendto(rep.encode(), clientaddress)
 
     def starserver(self):
         self.client = socket(AF_INET, SOCK_DGRAM)
@@ -32,8 +47,13 @@ class Pc:
         for i in range(2):
             Thread(target=self.handlerequest, args=(self.client,)).start()
 
+    def startuc(self):
+        self.client = socket(AF_INET, SOCK_DGRAM)
+        self.client.bind((self.servername, self.serverport))
+        Thread(target=self.handlerequest, args=(self.client,)).start()
+
     def sendmessage(self, neighbor):
-        if neighbor == self.prev or neighbor == self.nex:
+        if self.uc or neighbor == self.prev or neighbor == self.nex:
 
             self.client = socket(AF_INET, SOCK_DGRAM)
             while True:
