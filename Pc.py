@@ -50,7 +50,8 @@ class Pc:
     def startuc(self):
         self.client = socket(AF_INET, SOCK_DGRAM)
         self.client.bind((self.servername, self.serverport))
-        Thread(target=self.handlerequest, args=(self.client,)).start()
+        for i in range(6):
+            Thread(target=self.handlerequest, args=(self.client,)).start()
 
     def sendmessage(self, neighbor):
         if self.uc or neighbor == self.prev or neighbor == self.nex:
@@ -77,3 +78,6 @@ class Pc:
 
     def showprev(self):
         return self.prev.pcnumber
+
+    def showkey(self):
+        return self.key
